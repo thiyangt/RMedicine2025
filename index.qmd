@@ -314,18 +314,42 @@ knitr::include_graphics("presentationimage/hub.png")
 
 ## Methods of Addressing Interrupted Period
 
-> **Approach 1**
+**Approach 1**
 
-**A1Exclude:** excluding the interrupted period from model training
+Excluding the interrupted period from model training
 
-> **Approach 2**
 
-**A2Adjusted:** forecasting the interrupted period first and then using it for modeling
+**Approach 2**
 
-> **Approach 3**
+Set interrupted period to missing
 
-**A3Downweight:** down-weighting observations
+**Approach 3**
 
-> Comparison
+Forecasting the interrupted period first and then using it for modeling
+
+**Approach 4**
+
+Down-weighting observations
+
+**Approach 4**
+
+Set interrupted period to missing
+
+## Comparison
 
 - Forecasts are compared without adjusting for the interruption period
+
+
+## Excluding the interrupted period from model training
+
+> Data
+
+training period:
+
+test period: 
+
+> Method
+
+- ARIMA models through auto.arima: without applying log transformation on cases
+
+- ARIMA models through auto.arima: with applying log transformation on cases
