@@ -352,4 +352,4 @@ test period:
 
 - ARIMA models through auto.arima: without applying log transformation on cases
 
-- ARIMA models through auto.arima: with applying log transformation on cases
+- ARIMA models through auto.arima: with applying log transformation on cases (bias-corrected back transformation for the mean prediction)
