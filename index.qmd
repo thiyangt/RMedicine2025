@@ -22,7 +22,7 @@ format:
     show-slide-number: all
     highlight-style: rstudio_default-light.theme
     logo: "img/rmed.png"
-    footer: "[Slides are here](https://){target='_blank'}"  # complete the URL
+   # footer: "[Slides are here](https://){target='_blank'}"  # complete the URL
     include-after-body: "img/clean_title_page.html"
 include-in-header:
   text: |
@@ -78,7 +78,7 @@ worlddata2019 <- dplyr::filter(world_annual, year == 2019)
 ggplot(worlddata2019, aes(x = long, y = lat, group = group, fill = factor(dengue.present))) +
   geom_polygon(color = "black") +
   coord_fixed(1.3) +  # Ensures correct aspect ratio
-  scale_fill_manual(values=c( "#969696", "#e31a1c"),name = "Dengue Presence", labels = c("No", "Yes")) +  # Using viridis for better color representation
+  scale_fill_manual(values=c( "#969696", "#fc9272"),name = "Dengue Presence", labels = c("No", "Yes")) +  # Using viridis for better color representation
   labs(
  #   title = "Global Dengue Distribution in 2019",
  #   subtitle = "Presence of Dengue Virus Reported by Country",
@@ -95,4 +95,118 @@ ggplot(worlddata2019, aes(x = long, y = lat, group = group, fill = factor(dengue
     axis.title = element_text(size = 12)
   )
 
+```
+
+## Why are countries near the equator at higher risk of dengue?"
+
+:::: {.columns}
+
+::: {.column width="50%"}
+
+```{r}
+knitr::include_graphics("presentationimage/mosquito-life-cycle-illustration.jpg")
+```
+
+
+
+<span style="font-size: xx-small;">Image Source: [https://www.gptx.org/Departments/Public-Health-and-Environmental-Quality/Public-Health/Mosquito-Control-Fight-the-Bite/Mosquito-Facts](https://www.gptx.org/Departments/Public-Health-and-Environmental-Quality/Public-Health/Mosquito-Control-Fight-the-Bite/Mosquito-Facts)</span>
+
+
+:::
+
+::: {.column width="50%"}
+
+**Favorable climate that speed up the mosquito life cycle**
+
+1. Warm temperatures year-round
+
+2. High humidity and frequent rainfall
+
+3. No harsh winters
+
+4. Many equatorial countries have rapidly growing urban areas with poor waste and water management.
+
+5. People often live and work in open environments with limited protection, increasing exposure.
+
+
+
+:::
+
+::::
+
+## Countries with Risk of Dengue
+
+Sri Lanka
+
+```{r, out.height="100%"}
+# Coordinates for Sri Lanka
+sri_lanka_coords <- data.frame(
+  long = 80.7718,
+  lat = 7.8731,
+  label = "Sri Lanka"
+)
+
+ggplot(worlddata2019, aes(x = long, y = lat, group = group, fill = factor(dengue.present))) +
+  geom_polygon(color = "black") +
+  geom_point(data = sri_lanka_coords, aes(x = long, y = lat), inherit.aes = FALSE, color = "blue", size = 3) +
+  geom_text(data = sri_lanka_coords, aes(x = long, y = lat, label = label), inherit.aes = FALSE,
+            vjust = 1, size = 7, color = "blue") +
+  coord_fixed(1.3) +
+  scale_fill_manual(values = c("#969696", "#fc9272"), name = "Dengue Presence", labels = c("No", "Yes")) +
+  labs(
+    x = "Longitude",
+    y = "Latitude",
+    caption = "Author: Thiyanga S. Talagala, Source: https://denguedatahub.netlify.app/world.html"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),
+    plot.subtitle = element_text(hjust = 0.5, size = 12),
+    axis.text = element_text(size = 10),
+    axis.title = element_text(size = 12)
+  )
+
+```
+
+## Time Series Plot of Weekly Dengue Cases in Sri Lanka (National Level)
+
+```{r, warning=FALSE, message=FALSE}
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+library(tsibble)
+library(tidyverse)
+library(lubridate)
+library(plotly)
+# Step 1: Aggregate weekly cases across all districts
+data("srilanka_weekly_data")
+srilanka_weekly_data <- srilanka_weekly_data[-which(srilanka_weekly_data$year == 2023 & srilanka_weekly_data$week == 52), ]
+country_weekly <- srilanka_weekly_data |>
+  group_by(year, week, start.date) %>%
+  summarise(total_cases = sum(cases, na.rm = TRUE), .groups = 'drop') |>
+  arrange(start.date)
+
+# Step 2: Plot the time series
+country_weekly <- country_weekly |> 
+  mutate(
+         yearweek = yearweek(start.date))
+
+country_weekly_tsibble <- country_weekly |>
+  as_tsibble(index = yearweek)
+p1 <- ggplot(country_weekly_tsibble, aes(x = yearweek, y = total_cases)) +
+  geom_line() +
+  scale_x_yearweek(date_breaks = "1 year", date_labels = "%Y") +
+  labs(
+   # title = "Weekly Dengue Cases in Sri Lanka",
+  #  subtitle = "From National Aggregated Data",
+    x = "Year",
+    y = "Weekly Dengue Cases"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.title = element_text(face = "bold")
+  )
+ggplotly(p1)
 ```
