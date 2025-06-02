@@ -191,7 +191,8 @@ country_weekly <- srilanka_weekly_data |>
 # Step 2: Plot the time series
 country_weekly <- country_weekly |> 
   mutate(
-         yearweek = yearweek(start.date))
+         yearweek = yearweek(start.date)) |>
+  distinct(yearweek, .keep_all = TRUE) 
 
 country_weekly_tsibble <- country_weekly |>
   as_tsibble(index = yearweek)
@@ -217,7 +218,7 @@ ggplotly(p1)
 <span style="color: red;">Red Segment: Interrupted Period Due to the COVID-19 Pandemic</span>
 
 
-```{r}
+```{r, warning=FALSE, message=FALSE, out.width="100%"}
 library(dplyr)
 library(ggplot2)
 library(tsibble)
@@ -246,3 +247,85 @@ ggplot() +
   )
 
 ```
+
+# Data
+
+## Weekly Dengue Cases Corresponds to 25 Districts in Sri Lanka 
+
+```{r, warning=FALSE, message=FALSE}
+## devtools::install_github("thiyangt/SriLanka")
+library(SriLanka)
+ggplot(lka_adm2) + 
+  geom_sf()
+```
+
+## Data Source
+
+```{r}
+knitr::include_graphics("presentationimage/epidunit.png")
+```
+
+## `denguedatahub` R package
+
+:::: {.columns}
+
+::: {.column width="20%"}
+
+```{r}
+knitr::include_graphics("presentationimage/logo.png")
+```
+
+:::
+
+::: {.column width="80%"}
+
+On CRAN
+
+```r
+install.packages("denguedatahub")
+```
+
+You could install the development version from Github using
+
+```r
+install.packages("devtools")
+devtools::install_github("thiyangt/denguedatahub")
+```
+
+:::
+
+::::
+
+## Web scrapping using the `denguedatahub` R package
+
+```{r}
+knitr::include_graphics("presentationimage/webtotidy.png")
+```
+
+## More about denguedatahub
+
+link: [https://denguedatahub.netlify.app/](https://denguedatahub.netlify.app/)
+
+```{r, out.width="100%", fig.pos="center"}
+knitr::include_graphics("presentationimage/hub.png")
+```
+
+# Methodology: Methods of Forecasting
+
+## Methods of Addressing Interrupted Period
+
+> **Approach 1**
+
+**A1Exclude:** excluding the interrupted period from model training
+
+> **Approach 2**
+
+**A2Adjusted:** forecasting the interrupted period first and then using it for modeling
+
+> **Approach 3**
+
+**A3Downweight:** down-weighting observations
+
+> Comparison
+
+- Forecasts are compared without adjusting for the interruption period
