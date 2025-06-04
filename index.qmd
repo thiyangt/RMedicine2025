@@ -536,9 +536,9 @@ fc_a2 <-   tb_all_ARIMA_updatedcovid  |>
 $$forecast_{Approach 3} = 0.7 \times forecast_{\text{excluded}} + 0.3 \times forecast_{\text{included without extimating}}$$
 
 ```{r, echo=TRUE}
-#fc_a3 = (0.3*fcb$.mean) + (0.7*fc_a1$.mean)
+#fc_a3 = (0.4*fcb$.mean) + (0.6*fc_a1$.mean)
 fc_a3 <- fc_a1 |>
-  mutate(.mean = 0.3 * fcb$.mean + 0.7 * .mean,
+  mutate(.mean = round(0.4 * fcb$.mean + 0.6 * .mean,0),
          .model = "fc_a3")
 fc_a3
 ```
@@ -549,8 +549,8 @@ fc_a3
 ```{r, echo=TRUE}
 fcb_accuracy <- fabletools::accuracy(fcb, test_tsibble)
 fc_a1_accuracy <- fabletools::accuracy(fc_a1, test_tsibble)
-fcb_a2_accuracy <- fabletools::accuracy(fc_a2, test_tsibble)
-fcb_a3_accuracy <- fabletools::accuracy(fc_a3, test_tsibble)
+fc_a2_accuracy <- fabletools::accuracy(fc_a2, test_tsibble)
+fc_a3_accuracy <- fabletools::accuracy(fc_a3, test_tsibble)
 
 ```
 
@@ -560,4 +560,165 @@ Output only for `fcb_accuracy` for illustration
 fcb_accuracy
 ```
 
-## 
+## RMSE from all approaches
+
+
+```{r, warning=FALSE, echo=TRUE}
+#| code-fold: true
+#| code-summary: "Show the code"
+Benchmark <- fcb_accuracy$RMSE
+Excluded <- fc_a1_accuracy$RMSE
+UpdatedCovid <- fc_a2_accuracy$RMSE
+Downweight <- fc_a3_accuracy$RMSE
+rmse_tbl <- tibble(Benchmark,Excluded, UpdatedCovid, Downweight)
+rmse_tbl
+```
+
+## Distribution of RMSE
+
+```{r, warning=FALSE, echo=TRUE}
+#| code-fold: true
+#| code-summary: "Show the code"
+rmse_tbl_long <- rmse_tbl |> pivot_longer(everything(), names_to = "Approach",
+    values_to = "RMSE")
+
+rmse_tbl_long |> ggplot(aes(x=Approach, y=RMSE, col=RMSE)) + geom_boxplot()
+```
+
+## Summary statistics of RMSE
+
+```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
+summary_stats <- rmse_tbl_long |>
+  group_by(Approach) |>
+  summarise(
+    mean_RMSE = mean(RMSE, na.rm = TRUE),
+    median_RMSE = median(RMSE, na.rm = TRUE),
+    sd_RMSE = sd(RMSE, na.rm = TRUE),
+    min_RMSE = min(RMSE, na.rm = TRUE),
+    max_RMSE = max(RMSE, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+summary_stats |> knitr::kable()
+
+```
+
+## MAE
+
+```{r}
+MAE_fcb <- fcb_accuracy$MAE
+MAE_fc_a1 <- fc_a1_accuracy$MAE
+MAE_fc_a2 <- fc_a2_accuracy$MAE
+MAE_fc_a3 <- fc_a3_accuracy$MAE
+MAE_tbl <- tibble(MAE_fcb,MAE_fc_a1, MAE_fc_a2, MAE_fc_a3)
+MAE_tbl_long <- MAE_tbl |> pivot_longer(everything(), names_to = "Approach",
+    values_to = "MAE")
+MAE_tbl_long  <- MAE_tbl_long  %>%
+  mutate(Approach = case_when(
+    Approach == "MAE_fc_a1" ~ "Excluded",
+    Approach == "MAE_fc_a2" ~ "UpdatedCovid",
+    Approach == "MAE_fc_a3" ~ "Downweight",
+    Approach == "MAE_fcb"   ~ "Benchmark",
+    TRUE ~ Approach
+  ))
+summary_stats_MAE <- MAE_tbl_long |>
+  group_by(Approach) |>
+  summarise(
+    mean_MAE = mean(MAE, na.rm = TRUE),
+    median_MAE = median(MAE, na.rm = TRUE),
+    sd_MAE = sd(MAE, na.rm = TRUE),
+    min_MAE = min(MAE, na.rm = TRUE),
+    max_MAE = max(MAE, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+summary_stats_MAE |> knitr::kable()
+```
+
+## ME
+
+```{r}
+ME_fcb <- fcb_accuracy$ME
+ME_fc_a1 <- fc_a1_accuracy$ME
+ME_fc_a2 <- fc_a2_accuracy$ME
+ME_fc_a3 <- fc_a3_accuracy$ME
+ME_tbl <- tibble(ME_fcb,ME_fc_a1, ME_fc_a2, ME_fc_a3)
+ME_tbl_long <- ME_tbl |> pivot_longer(everything(), names_to = "Approach",
+    values_to = "ME")
+ME_tbl_long  <- ME_tbl_long  %>%
+  mutate(Approach = case_when(
+    Approach == "ME_fc_a1" ~ "Excluded",
+    Approach == "ME_fc_a2" ~ "UpdatedCovid",
+    Approach == "ME_fc_a3" ~ "Downweight",
+    Approach == "ME_fcb"   ~ "Benchmark",
+    TRUE ~ Approach
+  ))
+summary_stats_ME <- ME_tbl_long |>
+  group_by(Approach) |>
+  summarise(
+    mean_ME = mean(ME, na.rm = TRUE),
+    median_ME = median(ME, na.rm = TRUE),
+    sd_ME = sd(ME, na.rm = TRUE),
+    min_ME = min(ME, na.rm = TRUE),
+    max_ME = max(ME, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+summary_stats_MAE |> knitr::kable()
+```
+
+## District-wise Best Approach
+
+```{r, echo=TRUE}
+#| code-fold: true
+#| code-summary: "Show the code"
+rmse_tbl$Best <- names(rmse_tbl)[apply(rmse_tbl, MARGIN = 1, FUN = which.min)]
+```
+
+```{r}
+rmse_tbl$District <- fcb_accuracy$district
+rmse_tbl 
+```
+
+## Spatial Visualization of Best Approaches
+
+```{r, echo=TRUE}
+#| code-fold: true
+#| code-summary: "Show the code"
+library(sf)
+rmse_tbl <- rmse_tbl |>
+  mutate(join_key = substr(District, 1, 5))
+
+lka_adm2 <- lka_adm2 |>
+  mutate(join_key = substr(NAME, 1, 5))
+
+# left join to preserve sf geometry from lka_adm2
+combined_sf <- lka_adm2 %>%
+  left_join(rmse_tbl, by = "join_key")
+p1 <- ggplot(combined_sf ) + 
+  geom_sf(aes(fill=Best)) + scale_fill_brewer(palette = "Dark2")
+p1
+```
+
+# Why?
+
+##
+
+
+
+```{r, out.height="100%", warning=FALSE, message=FALSE}
+library(cowplot)
+library(magick)
+
+#knitr::include_graphics("presentationimage/Weather.jpg")
+img <- image_read("presentationimage/Weather.jpg") # Replace with your image path
+img_gg <- ggdraw() + draw_image(img)
+
+# Side by side
+plot_grid( p1, img_gg, nrow = 1)
+```
+
+
+
