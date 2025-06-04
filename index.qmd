@@ -5,8 +5,7 @@ author:
   - name: "Thiyanga S. Talagala"
     affiliation:
       - "University of Sri Jayewardenepura, Sri Lanka"
-date: last-modified
-date-format: "MMMM D, YYYY"
+date: "June 9, 2025"
 format:
   revealjs:
     theme: 
@@ -581,6 +580,9 @@ rmse_by_district <- fc_a3 |>
   summarise(RMSE = sqrt(mean((actual - predicted)^2)), .groups = "drop")
 Downweight <- rmse_by_district$RMSE
 rmse_tbl <- tibble(Benchmark,Excluded, UpdatedCovid, Downweight)
+```
+
+```{r}
 rmse_tbl
 ```
 
@@ -799,3 +801,58 @@ srilanka_weekly_data  |>
   scale_x_yearweek(date_breaks = "1 year", date_labels = "%Y") 
 
 ```
+
+## Feature-based representation
+
+```{r, echo=TRUE}
+#| code-fold: true
+#| code-summary: "Show the code"
+library(feasts)
+features_df <- df_tsibble |>
+   features(cases, feature_set(tags = "stl"))
+```
+
+```{r}
+features_df |> as.data.frame()
+```
+
+## Feature-based exploration
+
+```{r, echo=TRUE}
+#| code-fold: true
+#| code-summary: "Show the code"
+features_df$BEST <- rmse_tbl$Best
+ggplot(features_df, aes(x=trend_strength,
+                        y=seasonal_strength_year,
+                        col=BEST)) + geom_point(size=3) +
+  scale_colour_brewer(palette = "Dark2") + theme(aspect.ratio = 1)
+```
+
+## Feature-based exploration
+
+```{r, echo=TRUE}
+#| code-fold: true
+#| code-summary: "Show the code"
+features_df$BEST <- rmse_tbl$Best
+ggplot(features_df, aes(x=linearity,
+                        y=curvature,
+                        col=BEST)) + geom_point(size=3) +
+  scale_colour_brewer(palette = "Dark2") + theme(aspect.ratio = 1)
+```
+
+
+## Conclusions
+
+- No single method performs best across all districts.
+
+- The effectiveness of each approach depends not only on the model architecture but also on the nature of interruption and historical patterns unique to each district.
+
+- Beyond improving model performance, this can provide insight into the stability and nature of the time series signal.
+
+## Thank you
+
+Slides are available at: [https://thiyangt.github.io/RMedicine2025/#/title-slide](https://thiyangt.github.io/RMedicine2025/#/title-slide)
+
+Link to denguedatahub: [https://denguedatahub.netlify.app/](https://denguedatahub.netlify.app/)
+
+Contact: **ttalagala@sjp.ac.lk**
