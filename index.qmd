@@ -172,7 +172,9 @@ ggplot(worlddata2019, aes(x = long, y = lat, group = group, fill = factor(dengue
 
 ## Time Series Plot of Weekly Dengue Cases in Sri Lanka (National Level)
 
-```{r, warning=FALSE, message=FALSE, out.width="100%"}
+```{r, warning=FALSE, message=FALSE, out.width="100%", echo=TRUE}
+#| code-fold: true
+#| code-summary: "Show the code"
 library(dplyr)
 library(ggplot2)
 library(lubridate)
@@ -183,6 +185,10 @@ library(plotly)
 # Step 1: Aggregate weekly cases across all districts
 data("srilanka_weekly_data")
 srilanka_weekly_data <- srilanka_weekly_data[-which(srilanka_weekly_data$year == 2023 & srilanka_weekly_data$week == 52), ]
+
+srilanka_weekly_data[which(srilanka_weekly_data$start.date == "12/26/2020"), ]$cases <-  c(35, 17,  18, 20, 2, 0, 3, 2, 7, 6, 1, 1, 0, 0, 208, 0, 0, 12, 8, 4, 0, 0, 0, 2, 3, 2)
+
+
 country_weekly <- srilanka_weekly_data |>
   group_by(year, week, start.date) %>%
   summarise(total_cases = sum(cases, na.rm = TRUE), .groups = 'drop') |>
@@ -358,7 +364,7 @@ library(broom)
 #| code-fold: true
 #| code-summary: "Show the code"
 
-data("srilanka_weekly_data")
+#data("srilanka_weekly_data")
 df <- srilanka_weekly_data |>
 mutate(yearweek = yearweek(start.date))
 duplicaterws <- df |> 
@@ -416,7 +422,7 @@ test_tsibble
 ## Benchmark: Without considering the interruption effect
 
 
-```{r, warning=FALSE, message=FALSE, echo=TRUE, cache=TRUE}
+```{r, warning=FALSE, message=FALSE, echo=TRUE}
 #| code-fold: true
 #| code-summary: "Show the code"
 tb_all_ARIMA <- train_tsibble |> model(arima = ARIMA(cases))
@@ -463,7 +469,7 @@ test_tsibble2  <- train_tsibble |> filter(year(yearweek) == 2020 |
        year(yearweek) == 2022)
 ```
 
-```{r, echo=TRUE}
+```{r, echo=TRUE, cache=TRUE}
 tb_all_ARIMA2 <- train_tsibble2 |> model(arima = ARIMA(cases))
 ```
 
@@ -536,12 +542,13 @@ fc_a2 <-   tb_all_ARIMA_updatedcovid  |>
 $$forecast_{Approach 3} = 0.7 \times forecast_{\text{excluded}} + 0.3 \times forecast_{\text{included without extimating}}$$
 
 ```{r, echo=TRUE}
-#fc_a3 = (0.4*fcb$.mean) + (0.6*fc_a1$.mean)
-fc_a3 <- fc_a1 |>
-  mutate(.mean = round(0.4 * fcb$.mean + 0.6 * .mean,0),
-         .model = "fc_a3")
-fc_a3
+fc_a3mean <- (0.3*fcb$.mean) + (0.7*fc_a1$.mean)
+fc_a3 <- data.frame(district=test_tsibble$district,
+                   predicted = fc_a3mean,
+                   actual=test_tsibble$cases)
 ```
+
+
 
 # Model Comparison
 
@@ -550,7 +557,7 @@ fc_a3
 fcb_accuracy <- fabletools::accuracy(fcb, test_tsibble)
 fc_a1_accuracy <- fabletools::accuracy(fc_a1, test_tsibble)
 fc_a2_accuracy <- fabletools::accuracy(fc_a2, test_tsibble)
-fc_a3_accuracy <- fabletools::accuracy(fc_a3, test_tsibble)
+
 
 ```
 
@@ -569,7 +576,10 @@ fcb_accuracy
 Benchmark <- fcb_accuracy$RMSE
 Excluded <- fc_a1_accuracy$RMSE
 UpdatedCovid <- fc_a2_accuracy$RMSE
-Downweight <- fc_a3_accuracy$RMSE
+rmse_by_district <- fc_a3 |>
+  group_by(district) |>
+  summarise(RMSE = sqrt(mean((actual - predicted)^2)), .groups = "drop")
+Downweight <- rmse_by_district$RMSE
 rmse_tbl <- tibble(Benchmark,Excluded, UpdatedCovid, Downweight)
 rmse_tbl
 ```
@@ -611,7 +621,10 @@ summary_stats |> knitr::kable()
 MAE_fcb <- fcb_accuracy$MAE
 MAE_fc_a1 <- fc_a1_accuracy$MAE
 MAE_fc_a2 <- fc_a2_accuracy$MAE
-MAE_fc_a3 <- fc_a3_accuracy$MAE
+rmse_by_district <- fc_a3 |>
+  group_by(district) |>
+  summarise(MAE = mean(abs(actual - predicted)), .groups = "drop")
+MAE_fc_a3 <- rmse_by_district$MAE
 MAE_tbl <- tibble(MAE_fcb,MAE_fc_a1, MAE_fc_a2, MAE_fc_a3)
 MAE_tbl_long <- MAE_tbl |> pivot_longer(everything(), names_to = "Approach",
     values_to = "MAE")
@@ -643,7 +656,10 @@ summary_stats_MAE |> knitr::kable()
 ME_fcb <- fcb_accuracy$ME
 ME_fc_a1 <- fc_a1_accuracy$ME
 ME_fc_a2 <- fc_a2_accuracy$ME
-ME_fc_a3 <- fc_a3_accuracy$ME
+rmse_by_district <- fc_a3 |>
+  group_by(district) |>
+  summarise(ME = mean(actual - predicted), .groups = "drop")
+ME_fc_a3 <- rmse_by_district$ME
 ME_tbl <- tibble(ME_fcb,ME_fc_a1, ME_fc_a2, ME_fc_a3)
 ME_tbl_long <- ME_tbl |> pivot_longer(everything(), names_to = "Approach",
     values_to = "ME")
@@ -713,7 +729,7 @@ library(cowplot)
 library(magick)
 
 #knitr::include_graphics("presentationimage/Weather.jpg")
-img <- image_read("presentationimage/Weather.jpg") # Replace with your image path
+img <- image_read("presentationimage/rainfall.png") # Replace with your image path
 img_gg <- ggdraw() + draw_image(img)
 
 # Side by side
@@ -722,3 +738,64 @@ plot_grid( p1, img_gg, nrow = 1)
 
 
 
+
+## Example from downweight as the best approach: Colombo
+
+```{r, echo=TRUE}
+#| code-fold: true
+#| code-summary: "Show the code"
+srilanka_weekly_data  |>
+  filter(district == "Colombo") |>
+  mutate(
+    yearweek = yearweek(start.date)) |>
+  ggplot(aes(x = yearweek, y = cases)) +
+  geom_line() +
+  scale_x_yearweek(date_breaks = "1 year", date_labels = "%Y")
+
+```
+
+## Example from excluded as the best approach: Gampaha
+
+```{r, echo=TRUE}
+#| code-fold: true
+#| code-summary: "Show the code"
+srilanka_weekly_data  |>
+  filter(district == "Gampaha") |>
+  mutate(
+    yearweek = yearweek(start.date)) |>
+  ggplot(aes(x = yearweek, y = cases)) +
+  geom_line() +
+  scale_x_yearweek(date_breaks = "1 year", date_labels = "%Y")
+
+```
+
+
+## Example from benchmark as the best approach: NuwaraEliya
+
+```{r, echo=TRUE}
+#| code-fold: true
+#| code-summary: "Show the code"
+srilanka_weekly_data  |>
+  filter(district == "NuwaraEliya") |>
+  mutate(
+    yearweek = yearweek(start.date)) |>
+  ggplot(aes(x = yearweek, y = cases)) +
+  geom_line() +
+  scale_x_yearweek(date_breaks = "1 year", date_labels = "%Y")
+
+```
+
+## Example from covid19updated as the best approach: Anuradhapura
+
+```{r, echo=TRUE}
+#| code-fold: true
+#| code-summary: "Show the code"
+srilanka_weekly_data  |>
+  filter(district == "Anuradhapura") |>
+  mutate(
+    yearweek = yearweek(start.date)) |>
+  ggplot(aes(x = yearweek, y = cases)) +
+  geom_line() +
+  scale_x_yearweek(date_breaks = "1 year", date_labels = "%Y") 
+
+```
