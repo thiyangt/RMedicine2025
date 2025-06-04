@@ -57,8 +57,12 @@ suppressPackageStartupMessages(library(tidyverse))
 library(knitr)
 # library(kableExtra)
 ```
- 
 
+##
+
+```{r}
+knitr::include_graphics("presentationimage/stat.png")
+```
 
 ## Countries with Risk of Dengue
 
@@ -848,6 +852,10 @@ ggplot(features_df, aes(x=linearity,
 - The effectiveness of each approach depends not only on the model architecture but also on the nature of interruption and historical patterns unique to each district.
 
 - Beyond improving model performance, this can provide insight into the stability and nature of the time series signal.
+
+## References
+
+Hyndman, R. J., & Rostami-Tabar, B. (2025). Forecasting interrupted time series. Journal of the Operational Research Society, 76(4), 790-803.
 
 ## Thank you
 
