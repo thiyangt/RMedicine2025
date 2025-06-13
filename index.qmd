@@ -696,7 +696,7 @@ summary_stats_ME <- ME_tbl_long |>
     .groups = "drop"
   )
 
-summary_stats_MAE |> knitr::kable()
+summary_stats_ME |> knitr::kable()
 ```
 
 ## District-wise Best Approach
