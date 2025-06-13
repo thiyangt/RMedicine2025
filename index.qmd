@@ -5,7 +5,7 @@ author:
   - name: "Thiyanga S. Talagala"
     affiliation:
       - "Department of Statistics, Faculty of Applied Sciences, University of Sri Jayewardenepura, Sri Lanka"
-date: "June 9, 2025"
+date: "June 12, 2025"
 format:
   revealjs:
     theme: 
